@@ -1,3 +1,46 @@
+type DeleteUserPayload = record { userid : nat64 };
+type Errors = variant {
+  UserAlreadyExists : record { msg : text };
+  EmptyFields : record { msg : text };
+  MissingCredentials : record { msg : text };
+  NotFound : record { msg : text };
+  InvalidEmailFormat : record { msg : text };
+};
+type Result = variant { Ok : User; Err : Errors };
+type Result_1 = variant { Ok : text; Err : Errors };
+type Result_2 = variant { Ok : vec User; Err : Errors };
+type SearchPayload = record { userid : nat64 };
+type User = record {
+  id : nat64;
+  lookingforjob : bool;
+  joined_date : nat64;
+  name : text;
+  email : text;
+  phonenumber : text;
+  skills : text;
+  industry : text;
+};
+type UserPayload = record {
+  lookingforjob : bool;
+  name : text;
+  email : text;
+  phonenumber : text;
+  skills : text;
+  industry : text;
+};
+type UserUpdatePayload = record {
+  lookingforjob : bool;
+  userid : nat64;
+  name : text;
+  email : text;
+  phonenumber : text;
+  skills : text;
+  industry : text;
+};
 service : {
-    "greet": (text) -> (text) query;
+  create_user_profile : (UserPayload) -> (Result);
+  delete_user_profile : (DeleteUserPayload) -> (Result_1);
+  get_all_users : () -> (Result_2) query;
+  get_user : (SearchPayload) -> (Result) query;
+  user_update_details : (UserUpdatePayload) -> (Result);
 }
