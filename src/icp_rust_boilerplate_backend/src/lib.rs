@@ -18,7 +18,6 @@ struct User{
     phonenumber:String,
     industry:String,
     skills:String,
-    lookingforjob:bool,
     joined_date:u64,
 }
 impl Storable for User{
@@ -56,7 +55,7 @@ struct UserPayload{
     phonenumber:String,
     industry:String,
     skills:String,
-    lookingforjob:bool,
+
 }
 
 #[derive(candid::CandidType,Clone,Serialize,Deserialize,Default)]
@@ -67,7 +66,7 @@ struct UserUpdatePayload{
     phonenumber:String,
     industry:String,
     skills:String,
-    lookingforjob:bool,
+
     userid:u64
 }
 #[derive(candid::CandidType,Serialize,Deserialize,Default)]
@@ -143,7 +142,7 @@ if username_exists {
         phonenumber: payload.phonenumber,
         skills:payload.skills,
         industry:payload.industry,
-        lookingforjob:payload.lookingforjob,
+       
         joined_date: time(),
        
     };
@@ -153,6 +152,37 @@ if username_exists {
     Ok(new_user)
 }
 
+#[ic_cdk::update]
+
+fn user_update_details(payload:UserUpdatePayload)->Result<User,String>{
+    if  payload.email.is_empty()
+    ||payload.name.is_empty()
+    ||payload.industry.is_empty()
+    ||payload.phonenumber.is_empty()
+    ||payload.skills.is_empty()
+
+  {
+    return Err("All fields are required".to_string());
+  }
+     // Validate the payload to ensure that the email format is correct
+     if !payload.email.contains('@') {
+        return Err("Invalid email format".to_string());
+    }
+    
+match USERS_STORAGE.with(|service|service.borrow().get(&payload.userid)){
+    Some(mut us)=>{
+                        us.name=payload.name;
+                        us.email=payload.email;
+                        us.industry=payload.industry;
+                        us.phonenumber=payload.phonenumber;
+                        us.skills=payload.skills;
+                       
+                        do_insert(&us);
+                        Ok(us)
+                        
+    }
+    None=>Err("could not update user details".to_string()),
+}}
 //get all users
 #[ic_cdk::query]
 fn get_all_users() -> Result<Vec<User>, String> {
@@ -176,39 +206,11 @@ fn get_all_users() -> Result<Vec<User>, String> {
 }
 
 //user update his details
-#[ic_cdk::update]
-fn user_update_details(payload:UserUpdatePayload)->Result<User,String>{
-    if  payload.email.is_empty()
-    ||payload.name.is_empty()
-    ||payload.industry.is_empty()
-    ||payload.phonenumber.is_empty()
-    ||payload.skills.is_empty()
 
-  {
-    return Err("All fields are required".to_string());
-  }
-     // Validate the payload to ensure that the email format is correct
-     if !payload.email.contains('@') {
-        return Err("Invalid email format".to_string());
-    }
-    
-match USERS_STORAGE.with(|service|service.borrow().get(&payload.userid)){
-    Some(mut us)=>{
-                        us.name=payload.name;
-                        us.email=payload.email;
-                        us.industry=payload.industry;
-                        us.phonenumber=payload.phonenumber;
-                        us.skills=payload.skills;
-                        us.route=payload.route;
-                        us.lookingforjob=payload.lookingforjob;
-                        do_insert(&us);
-                        Ok(us)
-                        
-    }
-    None=>Err("could not update user details".to_string()),
-}
+
+#[ic_cdk::query]
 fn get_user(payload:SearchPayload)->Result<User,String>{
-    let user = USERS_STORAGE.with(|storage| storage.borrow().get(&payload.transporterid));
+    let user = USERS_STORAGE.with(|storage| storage.borrow().get(&payload.userid));
     match user {
         Some(user) => Ok(user),
         None => Err("user with the provided ID does not exist.".to_string()),
@@ -230,7 +232,8 @@ fn get_user(payload:SearchPayload)->Result<User,String>{
     }
   }
 
-}
+  
+
 fn do_insert(us:&User){
     USERS_STORAGE.with(|service|service.borrow_mut().insert(us.id,us.clone()));
 }
